@@ -1,0 +1,23 @@
+
+
+<p id="gameCode"></p>
+<button id="getGameCodeButton" onclick="getGameCode()">Get Join Code</button>
+
+<script>
+  async function getGameCode() {
+    
+    fetch('/action/getGameCode', {
+        method: 'GET',
+        headers: {'Content-Type': 'application/json'},
+      })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+      let hashHex = data['hash'];
+      let gameCodeMessage = `You are hosting game <b>${hashHex}</b><br> Share this with your friend so they can join!`
+      document.getElementById('gameCode').innerHTML = gameCodeMessage;
+
+      document.getElementById('getGameCodeButton').style = "display:none;";
+    });
+  }
+</script>
