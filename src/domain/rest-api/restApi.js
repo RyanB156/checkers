@@ -80,7 +80,7 @@ module.exports = class RestAPI {
         console.log(`get - Could not find ${id} in ${data}`);
       }
         
-      return new Failure(400, 'Item with index \'id\' could not be found');
+      return new Failure(400, `Item with id '${id}' could not be found`);
     } else {
       if (this.verbose) {
         console.log(`get - Found item ${JSON.stringify(data[id])} with index ${id}`);

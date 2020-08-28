@@ -1,7 +1,6 @@
 
 
 User Functionality
-
     Register
         User clicks 'Register' on the menu bar
         User enters username
@@ -13,12 +12,12 @@ User Functionality
         Server adds User to data store
         -> Login
     Login
-        User clicks 'Login' on the menu bar
-        User enters username
-        User enters password
-        User clicks 'Submit'
-        Client creates hash = H(password)
-        Client submits {username, hash} to Server
+        User clicks 'Login' on the menu bar √
+        User enters username √
+        User enters password √
+        User clicks 'Submit' √
+        Client creates hash = H(password) √
+        Client submits {username, hash} to Server √
         Server checks username and hash against data store
         -> Home
     Host Game
@@ -60,7 +59,41 @@ User Functionality
         Client requests stats from Server
         Client displays stats
 
+
 Security Requirements
     Do not expose user information, even if using http
     Do not allow players to manage game state
     Do not allow players to masquerade as the other player
+
+    Establish secure communication with Server
+        Client initiates connection w/o encryption over HTTP
+        Server and Client exchange symmetric keys w/ DH or EC
+
+    Secure communication with Server
+        Client encrypts message with its symmetric key
+        Client sends encrypted message to Server
+        Server looks up the symmetric key using activeSessions[clientIP]
+        Server decrypts the message
+            If the message decrypts successfully, it will have 'username' and 'sessionKey' fields
+        Server generates response
+        Server encrypts response
+        Server sends response
+        Client decrypts message
+
+
+Documentation
+    Add <app-'page name'></app-'page name'> to html pages to have express load the corresponding page in that location.
+
+    // This function loads a page with authentication
+    async function gotoPageWithAuth(pageName) {
+      fetch('/' + pageName, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Accept': 'text/html'},
+        body: JSON.stringify({username: localStorage['username'], sessionKey: localStorage['sessionKey']})
+      })
+      .then(response => {
+        response.text().then(text => {
+          document.getElementById('appData').innerHTML = text;
+        });
+      })
+    }

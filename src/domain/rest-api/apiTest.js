@@ -10,8 +10,14 @@ class Data {
 
 let api = new RestAPI('./data.json', true);
 
-for (let i = 1; i < 21; i++) {
-  api.delete(i);
+let data = [
+  new Data('a', {age: 22}),
+  new Data('b', {age: 18}),
+  new Data('c', {age:5})
+];
+
+for (datum of data) {
+  api.add(datum.name, datum);
 }
 
 console.log(api.getAll().data);
