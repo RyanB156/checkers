@@ -42,13 +42,14 @@ function getApp(routingPage) {
   return html;
 }
 
-function getSessionKey() {
+function getSessionKey(body) {
   let data = new TextEncoder().encode(Date.now() | Math.random() * 10000);
   let hash = crypto.createHash('sha256');
   hash.update(data);
   return hash.digest('hex');
 }
 
+// User login. Request must have 'username' and 'password'. username and password hash must match existing user.
 app.post('/action/login', jsonParser, function(req, res) {
   console.log('/action/login');
   console.log(`Server received ${JSON.stringify(req.body)}`);
@@ -72,6 +73,7 @@ app.post('/action/login', jsonParser, function(req, res) {
   }
 });
 
+// Register a user. Request must have 'username' and 'password'. username must be unique.
 app.post('/action/register', jsonParser, function(req, res) {
   console.log('/action/register');
   console.log(`Server received ${JSON.stringify(req.body)}`);
@@ -80,6 +82,9 @@ app.post('/action/register', jsonParser, function(req, res) {
     console.log('Request is missing username and/or password hash');
     return res.status(400).send('Register must have username and hash');
   } else {
+    if (userAPI.get(req.body['username']).status === 200) {
+      return res.status(400).send('A user with that username already exists');
+    }
     let username = req.body['username'];
     let result = userAPI.add(username, {'username': username, 'password': req.body['password'], 'sessionKey': ''});
     if (result.status === 200) {
@@ -90,10 +95,35 @@ app.post('/action/register', jsonParser, function(req, res) {
   }
 })
 
-app.get('/action/getGameCode', async function(req, res) {
-  console.log('/action/getGameCode');
-  let hash = getSessionKey();
-  return res.status(200).send({hash: hash});
+
+function canAuthenticate(body) {
+  return ('username' in body && 'sessionKey' in body);
+}
+
+// Returns true if the request body contains 'username' and 'password'; a user with that username exists; and the user has a valid session key
+// TODO: Expire session keys...
+function isAuthenticated(body) {
+  let userResult = userAPI.get(body['username']);
+  console.log(canAuthenticate(body), userResult.status == 200, userResult.data['sessionKey'], body['sessionKey']);
+  return canAuthenticate(body) && userResult.status == 200 && userResult.data['sessionKey'] === body['sessionKey'];
+}
+
+function accessDeniedHandler(res) {
+  return res.status(401).send('<h3>401 Access Denied</h3> <p>You do not have permission to access this resource</p>');
+}
+
+/**A list of (endpoint,function) pairs. The function takes the post body as an argument.*/
+let actionsWithAuth = [{name: 'hostGame', func: getSessionKey}];
+
+actionsWithAuth.forEach(action => {
+  app.post('/' + action.name, jsonParser, function(req, res) {
+    console.log('/' + pageName);
+    if (!isAuthenticated(req.body)) {
+      return accessDeniedHandler(res);
+    }
+    let data = action.func(req.body);
+    return res.status(200).send(data);
+  });
 });
 
 let pageNamesNoAuth = ['login', 'register'];
@@ -108,19 +138,12 @@ pageNamesNoAuth.forEach(pageName => {
 
 pageNamesAuth.forEach(pageName => {
   app.post('/' + pageName, jsonParser, function(req, res) {
-    if (!('username' in req.body && 'sessionKey' in req.body)) {
-      return res.status(401).send('<p>You do not have permission to access this resource</p>');
-    } else {
-      let userResult = userAPI.get(req.body['username']);
-      if (userResult.status !== 200) {
-        return res.status(userResult.status).send(userResult.error);
-      }
-      if (userResult.data['sessionKey'] !== req.body['sessionKey']) {
-        return res.status(401).send('401 Access Denied');
-      }
-      let page = getApp(pageName);
-      return res.status(200).send(page);
+    console.log('/' + pageName);
+    if (!isAuthenticated(req.body)) {
+      return accessDeniedHandler(res);
     }
+    let page = getApp(pageName);
+    return res.status(200).send(page);
   });
 });
 
