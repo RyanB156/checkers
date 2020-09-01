@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -12,6 +13,7 @@ const port = 3000;
 
 let app = express();
 app.use(cors());
+app.use(cookieParser());
 let jsonParser = bodyParser.json();
 
 const menuPath = './src/app/menu.html';
@@ -132,6 +134,7 @@ let pageNamesAuth = ['home', 'hostGame', 'joinGame'];
 pageNamesNoAuth.forEach(pageName => {
   app.get('/' + pageName, function(req, res) {
     let page = getApp(pageName);
+    console.log(req.cookies);
     return res.status(200).send(page);
   });
 });

@@ -1,6 +1,8 @@
 <head>
   <script>
 
+    var Cookies = require('cookies-js')(window);
+
     async function submit() {
       let username = $('#username').val();
       let password = $('#password').val();
@@ -25,6 +27,7 @@
           console.log('20', sessionKey);
           console.log(`Received session key ${sessionKey}`);
           localStorage['sessionKey'] = sessionKey;
+          Cookies.set('sessionKey', sessionKey);
           localStorage['username'] = username;
           gotoPageWithAuth('home');
         });
