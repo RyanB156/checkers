@@ -51,6 +51,10 @@ function getSessionKey(body) {
   return hash.digest('hex');
 }
 
+function startGame(body) {
+
+}
+
 // User login. Request must have 'username' and 'password'. username and password hash must match existing user.
 app.post('/action/login', jsonParser, function(req, res) {
   console.log('/action/login');
@@ -98,16 +102,15 @@ app.post('/action/register', jsonParser, function(req, res) {
 })
 
 
-function canAuthenticate(body) {
-  return ('username' in body && 'sessionKey' in body);
+function canAuthenticate(req) {
+  return ('username' in req.cookies && 'sessionKey' in req.cookies);
 }
 
-// Returns true if the request body contains 'username' and 'password'; a user with that username exists; and the user has a valid session key
+// Returns true if the cookies contains 'username' and 'sessionKey'; a user with that username exists; and the user has a valid session key
 // TODO: Expire session keys...
-function isAuthenticated(body) {
-  let userResult = userAPI.get(body['username']);
-  console.log(canAuthenticate(body), userResult.status == 200, userResult.data['sessionKey'], body['sessionKey']);
-  return canAuthenticate(body) && userResult.status == 200 && userResult.data['sessionKey'] === body['sessionKey'];
+function isAuthenticated(req) {
+  let userResult = userAPI.get(req.cookies['username']);
+  return canAuthenticate(req) && userResult.status == 200 && userResult.data['sessionKey'] === req.cookies['sessionKey'];
 }
 
 function accessDeniedHandler(res) {
@@ -115,15 +118,20 @@ function accessDeniedHandler(res) {
 }
 
 /**A list of (endpoint,function) pairs. The function takes the post body as an argument.*/
-let actionsWithAuth = [{name: 'hostGame', func: getSessionKey}];
+let actionsWithAuth = [
+  {name: 'getGameCode', func: getSessionKey},
+  {name: 'hostGame', func: getSessionKey},
+  {name: 'startGame', func: startGame}
+];
 
 actionsWithAuth.forEach(action => {
-  app.post('/' + action.name, jsonParser, function(req, res) {
-    console.log('/' + pageName);
-    if (!isAuthenticated(req.body)) {
+  app.post('/action/' + action.name, jsonParser, function(req, res) {
+    console.log('/action/' + action.name);
+    if (!isAuthenticated(req)) {
       return accessDeniedHandler(res);
     }
     let data = action.func(req.body);
+    console.log('returning: ', data);
     return res.status(200).send(data);
   });
 });
@@ -134,15 +142,15 @@ let pageNamesAuth = ['home', 'hostGame', 'joinGame'];
 pageNamesNoAuth.forEach(pageName => {
   app.get('/' + pageName, function(req, res) {
     let page = getApp(pageName);
-    console.log(req.cookies);
     return res.status(200).send(page);
   });
 });
 
 pageNamesAuth.forEach(pageName => {
-  app.post('/' + pageName, jsonParser, function(req, res) {
+  app.get('/' + pageName, function(req, res) {
     console.log('/' + pageName);
-    if (!isAuthenticated(req.body)) {
+    console.log('cookies: ', req.cookies);
+    if (!isAuthenticated(req)) {
       return accessDeniedHandler(res);
     }
     let page = getApp(pageName);

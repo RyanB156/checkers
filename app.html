@@ -8,22 +8,8 @@
 
       <!-- Bootstrap CSS -->
       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
-      <script src="./src/domain/cookie.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/js-cookie@rc/dist/js.cookie.min.js"></script>
       <title>Checkers Online</title>
-      <script>
-        async function gotoPageWithAuth(pageName) {
-          fetch('/' + pageName, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'Accept': 'text/html'},
-            body: JSON.stringify({username: localStorage['username'], sessionKey: localStorage['sessionKey']})
-          })
-          .then(response => {
-            response.text().then(text => {
-              document.getElementById('appData').innerHTML = text;
-            });
-          })
-        }
-      </script>
     </head>
     <body>
       
