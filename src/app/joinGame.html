@@ -1,0 +1,27 @@
+
+<input id="gameCode" type="text">
+<button onclick="join()">Join</button>
+
+<p id="joinError" class="text-danger hide">Unable to join</p>
+
+<script>
+  async function join() {
+    document.getElementById('joinError').classList.remove('show'); // TODO: Move this to a function to make this simpler.
+    document.getElementById('joinError').classList.add('hide');
+    let gameCode = $('#gameCode').val();
+    fetch('/action/joinGame', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({gameCode: $('#gameCode').val()})
+    })
+    .then(response => {
+      if (response.status !== 200) {
+        document.getElementById('joinError').classList.remove('hide');
+        document.getElementById('joinError').classList.add('show');
+      } else {
+        Cookies.set('gameCode', response.text());
+        location.href = '/playGame';
+      }
+    });
+  }
+</script>

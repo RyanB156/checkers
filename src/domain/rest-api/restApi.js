@@ -24,7 +24,7 @@ class Failure extends Result {
   }
 }
 
-module.exports = class RestAPI {
+class RestAPI {
 
   constructor(dataPath, verbose=false) {
     this.dataPath = dataPath;
@@ -167,3 +167,5 @@ module.exports = class RestAPI {
   }
 
 }
+
+module.exports = {Result, Success, Failure, RestAPI};

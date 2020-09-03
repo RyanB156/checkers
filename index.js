@@ -4,11 +4,11 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
-const api = require('./src/domain/rest-api/restApi.js');
-const Board = require('./src/domain/board');
+const { Result, Success, Failure, RestAPI } = require('./src/domain/rest-api/restApi');
+//const Board = require('./src/domain/board');
 
-const userAPI = new api('./src/domain/users.json');
-const gameAPI = new api('./src/domain/games.json');
+const userAPI = new RestAPI('./src/domain/users.json');
+const gameAPI = new RestAPI('./src/domain/games.json');
 
 const port = 3000;
 
@@ -49,12 +49,17 @@ function getSessionKey(body) {
   let data = new TextEncoder().encode(Date.now() | Math.random() * 10000);
   let hash = crypto.createHash('sha256');
   hash.update(data);
-  return hash.digest('hex');
+  return new Success(200, hash.digest('hex'));
+}
+
+function joinGame(body) {
+  let gameCode = body['gameCode'];
+  return new Success(200, gameCode);
 }
 
 function startGame(body) {
   let game = Board.init();
-  return JSON.stringify(game);
+  return new Success(200, JSON.stringify(game));
 }
 
 // User login. Request must have 'username' and 'password'. username and password hash must match existing user.
@@ -75,7 +80,7 @@ app.post('/action/login', jsonParser, function(req, res) {
     if (result.data['password'] !== req.body['password']) {
       return res.status(400).send('Login error');
     }
-    let sessionKey = getSessionKey();
+    let sessionKey = getSessionKey().data;
     userAPI.update(username, {username: username, password: result.data['password'], sessionKey: sessionKey});
     return res.status(200).send(sessionKey);
   }
@@ -123,7 +128,8 @@ function accessDeniedHandler(res) {
 let actionsWithAuth = [
   {name: 'getGameCode', func: getSessionKey},
   {name: 'hostGame', func: getSessionKey},
-  {name: 'startGame', func: startGame}
+  {name: 'joinGame', func: joinGame},
+  {name: 'startGame', func: startGame},
 ];
 
 actionsWithAuth.forEach(action => {
@@ -132,14 +138,17 @@ actionsWithAuth.forEach(action => {
     if (!isAuthenticated(req)) {
       return accessDeniedHandler(res);
     }
-    let data = action.func(req.body);
-    console.log('returning: ', data);
-    return res.status(200).send(data);
+    let dataResult = action.func(req.body);
+    if (dataResult.status === 200) {
+      return res.status(200).send(dataResult.data);
+    } else {
+      return res.status(dataResult.status).send(dataResult.error);
+    }
   });
 });
 
 let pageNamesNoAuth = ['login', 'register'];
-let pageNamesAuth = ['home', 'hostGame', 'joinGame'];
+let pageNamesAuth = ['home', 'hostGame', 'joinGame', 'playGame'];
 
 pageNamesNoAuth.forEach(pageName => {
   app.get('/' + pageName, function(req, res) {
