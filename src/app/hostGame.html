@@ -3,6 +3,44 @@
 <p id="gameCode"></p>
 <button id="getGameCodeButton" onclick="getGameCode()">Get Join Code</button>
 
+<button onclick="start()">Start</button>
+
+<style>
+  .white {
+    background-color: white;
+  }
+
+  .red {
+    background-color: red;
+  }
+
+  .piece {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+  }
+
+  .piece:hover {
+    cursor: grab;
+  }
+
+  .gridSquare {
+    width: 40px;
+    height: 40px;
+    border: 1px black solid;
+  }
+
+  .blackSquare {
+    background-color: black;
+  }
+
+  .whiteSquare {
+    background-color: rgb(200, 200, 200);
+  }
+</style>
+
+<table id="board" class="mt-5"></table>
+
 <script>
   async function getGameCode() {
     
@@ -19,4 +57,54 @@
       document.getElementById('getGameCodeButton').style = "display:none;";
     });
   }
+
+  async function start() {
+    fetch('/action/startGame', {
+      method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+    })
+    .then(response => response.text())
+    .then(data => {
+      let board = JSON.parse(data);
+      draw(board);
+    })
+  }
+
+
+  // Board is a 2D array of Pieces
+  function draw(board) {
+    console.log('board: ', board);
+    let inner = '';
+    let table = document.getElementById('board');
+    for (let row = 0; row < 8; row++) {
+      let tr = document.createElement('tr');
+      for (let col = 0; col < 8; col++) {
+        let piece = board[row][col];
+
+        let dataClass;
+        if (piece === undefined || piece === null) {
+          dataClass = '';
+        } else {
+          dataClass = piece['team'] === 'W' ? 'white' : 'red';
+        }
+        let squareClass = (row + col) % 2 !== 0 ? 'blackSquare' : 'whiteSquare';
+        // TODO: Draw kings differently.
+        // rowData += `<td class="${squareClass} gridSquare">${dataClass !== '' ? `<div class="${dataClass} piece"></div>` : '<div class="piece"></div>'}</td>`;
+        let td = document.createElement('td');
+        td.className += ' ' + squareClass + ' gridSquare';
+
+        let tdPiece = document.createElement('div');
+        if (dataClass !== '') {
+          tdPiece.className += ' ' + dataClass + ' piece';
+          tdPiece.innerHTML = piece['isKing'] ? 'K' : '';
+        }
+        td.appendChild(tdPiece);
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+
+    console.log(table.innerHTML);
+  }
+
 </script>

@@ -5,6 +5,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
 const api = require('./src/domain/rest-api/restApi.js');
+const Board = require('./src/domain/board');
 
 const userAPI = new api('./src/domain/users.json');
 const gameAPI = new api('./src/domain/games.json');
@@ -52,7 +53,8 @@ function getSessionKey(body) {
 }
 
 function startGame(body) {
-
+  let game = Board.init();
+  return JSON.stringify(game);
 }
 
 // User login. Request must have 'username' and 'password'. username and password hash must match existing user.
