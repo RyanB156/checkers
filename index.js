@@ -5,7 +5,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const fs = require('fs');
 const { Result, Success, Failure, RestAPI } = require('./src/domain/rest-api/restApi');
-//const Board = require('./src/domain/board');
+const {Board} = require('./src/domain/board');
 
 const userAPI = new RestAPI('./src/domain/users.json');
 const gameAPI = new RestAPI('./src/domain/games.json');

@@ -20,6 +20,22 @@
     border-radius: 18px;
   }
 
+  .kingMark {
+    position: relative;
+    font-size: 1.1em;
+    width: 18px;
+    top: 6px;
+    left: 12px;
+  }
+
+  .red .kingMark {
+    color: white;
+  }
+
+  .white .kingMark {
+    color: black;
+  }
+
   .piece:hover {
     cursor: grab;
   }
@@ -53,7 +69,7 @@
       console.log(data);
       let gameCodeMessage = `You are hosting game <b>${data}</b><br> Share this with your friend so they can join!`
       document.getElementById('gameCode').innerHTML = gameCodeMessage;
-
+      Cookies.set('gameCode', data);
       document.getElementById('getGameCodeButton').style = "display:none;";
     });
   }
@@ -87,7 +103,7 @@
         } else {
           dataClass = piece['team'] === 'W' ? 'white' : 'red';
         }
-        let squareClass = (row + col) % 2 !== 0 ? 'blackSquare' : 'whiteSquare';
+        let squareClass = (row + col) % 2 === 0 ? 'blackSquare' : 'whiteSquare';
         // TODO: Draw kings differently.
         // rowData += `<td class="${squareClass} gridSquare">${dataClass !== '' ? `<div class="${dataClass} piece"></div>` : '<div class="piece"></div>'}</td>`;
         let td = document.createElement('td');
@@ -96,7 +112,12 @@
         let tdPiece = document.createElement('div');
         if (dataClass !== '') {
           tdPiece.className += ' ' + dataClass + ' piece';
-          tdPiece.innerHTML = piece['isKing'] ? 'K' : '';
+          if (piece['isKing']) {
+            let kingMark = document.createElement('div');
+            kingMark.className += ' ' + 'kingMark';
+            kingMark.innerHTML = 'K';
+            tdPiece.appendChild(kingMark);
+          }
         }
         td.appendChild(tdPiece);
         tr.appendChild(td);
