@@ -24,9 +24,7 @@
         response.text().then(sessionKey => {
           console.log('20', sessionKey);
           console.log(`Received session key ${sessionKey}`);
-          localStorage['sessionKey'] = sessionKey;
           Cookies.set('sessionKey', sessionKey);
-          localStorage['username'] = username;
           Cookies.set('username', username);
           location.href = '/home';
         });

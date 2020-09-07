@@ -45,21 +45,56 @@ function getApp(routingPage) {
   return html;
 }
 
-function getSessionKey(body) {
+function getSessionKey(req) {
   let data = new TextEncoder().encode(Date.now() | Math.random() * 10000);
   let hash = crypto.createHash('sha256');
   hash.update(data);
   return new Success(200, hash.digest('hex'));
 }
 
-function joinGame(body) {
-  let gameCode = body['gameCode'];
+/*
+  host, friend, gameCode, currentPlayer, board
+*/
+function hostGame(req) {
+  let game = Board.init();
+
+  let gameState = {
+    host: req.cookies['username'],
+    friend: '',
+    gameCode: req.cookies['gameCode'],
+    currentPlayer: req.cookies['username'],
+    board: game
+  }
+  gameAPI.add(gameState.gameCode, gameState);
+
+  return new Success(200, gameState.gameCode);
+}
+
+function joinGame(req) {
+  let gameCode = req.body['gameCode'];
   return new Success(200, gameCode);
 }
 
-function startGame(body) {
-  let game = Board.init();
-  return new Success(200, JSON.stringify(game));
+function getBoard(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    return new Success(200, gameResult.data['board']);
+  }
+}
+
+function getAvailableMoves(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    let gameData = {
+      board: gameResult.data['board'],
+      availableMoves: Board.getAvailableMoves(gameResult.data['board'], req.body['row'], req.body['col'])
+    }
+    return new Success(200, gameData);
+  }
 }
 
 // User login. Request must have 'username' and 'password'. username and password hash must match existing user.
@@ -124,12 +159,13 @@ function accessDeniedHandler(res) {
   return res.status(401).send('<h3>401 Access Denied</h3> <p>You do not have permission to access this resource</p>');
 }
 
-/**A list of (endpoint,function) pairs. The function takes the post body as an argument.*/
+/**A list of (endpoint,function) pairs. The function takes the request as an argument.*/
 let actionsWithAuth = [
   {name: 'getGameCode', func: getSessionKey},
-  {name: 'hostGame', func: getSessionKey},
+  {name: 'hostGame', func: hostGame},
   {name: 'joinGame', func: joinGame},
-  {name: 'startGame', func: startGame},
+  {name: 'startGame', func: getBoard},
+  {name: 'getAvailableMoves', func: getAvailableMoves},
 ];
 
 actionsWithAuth.forEach(action => {
@@ -138,10 +174,13 @@ actionsWithAuth.forEach(action => {
     if (!isAuthenticated(req)) {
       return accessDeniedHandler(res);
     }
-    let dataResult = action.func(req.body);
+    console.log('--User is authenticated');
+    let dataResult = action.func(req);
     if (dataResult.status === 200) {
+      console.log('--Action successful');
       return res.status(200).send(dataResult.data);
     } else {
+      console.log('--Action failed');
       return res.status(dataResult.status).send(dataResult.error);
     }
   });
@@ -160,10 +199,10 @@ pageNamesNoAuth.forEach(pageName => {
 pageNamesAuth.forEach(pageName => {
   app.get('/' + pageName, function(req, res) {
     console.log('/' + pageName);
-    console.log('cookies: ', req.cookies);
     if (!isAuthenticated(req)) {
       return accessDeniedHandler(res);
     }
+    console.log('--User is authenticated');
     let page = getApp(pageName);
     return res.status(200).send(page);
   });
