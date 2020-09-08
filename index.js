@@ -63,6 +63,7 @@ function hostGame(req) {
     friend: '',
     gameCode: req.cookies['gameCode'],
     currentPlayer: req.cookies['username'],
+    isRunning: true,
     board: game
   }
   gameAPI.add(gameState.gameCode, gameState);
@@ -99,6 +100,11 @@ function getAvailableMoves(req) {
 
 /*
   TODO:
+
+    Game runs until the last piece is to be taken, then errors and restarts that turn...
+
+    Enforce turns
+
     Make sure the serve side of moving is good to go
     Setup client side of moving
       Use current piece, don't move without first selecting a piece √
@@ -107,16 +113,24 @@ function getAvailableMoves(req) {
 
 function move(req) {
   let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (!gameResult.data.isRunning) {
+    return;
+  }
   if (gameResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
-    let newBoard = Board.move(gameResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
-    if (newBoard === undefined) {
+    let gameState = Board.move(gameResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
+    if (gameState.board === undefined) {
       return new Failure(400, `Could not move piece (${req.body['startRow']}, ${req.body['startCol']}) to (${req.body['endRow']}, ${req.body['endCol']})`);
     } else {
-      gameResult.board = newBoard;
-      console.log(gameAPI.update(req.cookies['gameCode'], gameResult));
-      return new Success(200, newBoard);
+      if (!gameState.isRunning) {
+        gameResult.data['isRunning'] = false;
+        //gameAPI.delete(req.cookies['gameCode']);
+      } else {
+        gameResult.board = gameState.board;
+        gameAPI.update(req.cookies['gameCode'], gameResult.data);
+      }
+      return new Success(200, gameState);
     }
   }
 }

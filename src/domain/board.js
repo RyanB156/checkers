@@ -55,18 +55,21 @@ class Board {
     return availableMoves;
   }
 
+  static moveResult(isRunning, board, message) {
+    return {isRunning: isRunning, board: board, message: message};
+  }
+
   /** Move a piece, removing pieces that are jumped over */
   static move(board, startRow, startCol, endRow, endCol) {
     console.log(startRow, startCol, endRow, endCol);
     // Ensure the piece is inside the board.
     let availableMoves = this.getAvailableMoves(board, startRow, startCol);
-    let canMove = false;
     
     let takeMove = availableMoves.find(move => move.targetSquare[0] === endRow && move.targetSquare[1] === endCol);
 
     if (takeMove === undefined) {
       console.log('move undefined');
-      return undefined;
+      return this.moveResult(true, undefined, '');
     }
 
     let piece = board[startRow][startCol];
@@ -76,14 +79,50 @@ class Board {
     // Remove the piece that was jumped over, if possible.
     if (takeMove.jumpedSquare.length > 0) {
       if (board[takeMove.jumpedSquare[0]][takeMove.jumpedSquare[1]].team === piece.team) {
-        return undefined;
+        return this.moveResult(true, undefined, '');
       } else {
         board[takeMove.jumpedSquare[0]][takeMove.jumpedSquare[1]] = null;
       }
     }
 
-    return board;
+    if (piece.team === 'R' && endRow === 0 || piece.team === 'W' && endRow === 7) {
+      piece.isKing = true;
+    }
 
+    let redCount = 0, whiteCount = 0;
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (board[i][j] !== null) {
+          if (board[i][j].team === 'R') {
+            redCount++;
+          }
+          if (board[i][j].team === 'W') {
+            whiteCount++;
+          }
+        }
+      }
+    }
+
+    if (redCount === 0) {
+      return this.moveResult(false, board, 'White wins');
+    } else if (whiteCount === 0) {
+      return this.moveResult(false, board, 'Red wins');
+    } else {
+      return this.moveResult(true, board, '');
+    }
+
+  }
+
+  static getFreshPieces() {
+    return [
+      Piece.white(0, 0), Piece.white(0, 2), Piece.white(0, 4), Piece.white(0, 6),
+        Piece.white(1, 1), Piece.white(1, 3), Piece.white(1, 5), Piece.white(1, 7),
+      Piece.white(2, 0), Piece.white(2, 2), Piece.white(2, 4), Piece.white(2, 6),
+
+        Piece.red(5, 1), Piece.red(5, 3), Piece.red(5, 5), Piece.red(5, 7),
+      Piece.red(6, 0), Piece.red(6, 2), Piece.red(6, 4), Piece.red(6, 6),
+        Piece.red(7, 1), Piece.red(7, 3), Piece.red(7, 5), Piece.red(7, 7)
+    ]
   }
 
   static init() {
@@ -95,15 +134,7 @@ class Board {
       }
     } 
   
-    [
-      Piece.white(0, 0, true), Piece.white(0, 2), Piece.white(0, 4), Piece.white(0, 6),
-        Piece.white(1, 1), Piece.white(1, 3, true), Piece.white(1, 5), Piece.white(1, 7),
-      Piece.white(2, 0), Piece.white(2, 2), Piece.white(2, 4), Piece.white(4, 4), // Piece.white(2, 6)
-
-        Piece.red(5, 1), Piece.red(5, 3), Piece.red(5, 5, true), Piece.red(3, 5), // Piece.red(5, 7)
-      Piece.red(6, 0), Piece.red(6, 2), Piece.red(6, 4), Piece.red(6, 6),
-        Piece.red(7, 1), Piece.red(7, 3, true), Piece.red(7, 5), Piece.red(7, 7)
-    ].forEach(piece => {
+    this.getFreshPieces().forEach(piece => {
       board[piece.x][piece.y] = piece;
       delete piece.x;
       delete piece.y;
