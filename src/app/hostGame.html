@@ -2,10 +2,15 @@
 
 <p id="gameCode"></p>
 <button id="getGameCodeButton" onclick="getGameCode()">Get Join Code</button>
-
-<button onclick="start()">Start</button>
+<button id="hostGameButton" onclick="hostGame()">Host Game</button>
+<button id="startButton" onclick="start()">Start</button>
 
 <style>
+
+  #startButton {
+    display: none;
+  }
+
   .white {
     background-color: white;
   }
@@ -76,9 +81,10 @@
 
   async function getGameCode() {
     
-    fetch('/action/hostGame', {
+    fetch('/action/getGameCode', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
+        cache: 'no-cache'
       })
     .then(response => response.text())
     .then(data => {
@@ -87,7 +93,19 @@
       document.getElementById('gameCode').innerHTML = gameCodeMessage;
       Cookies.set('gameCode', data);
       document.getElementById('getGameCodeButton').style = "display:none;";
+      hostGame();
     });
+  }
+
+
+  async function hostGame() {
+    fetch('/action/hostGame', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+    })
+    .then(response => {
+      document.getElementById('startButton').style="display:block";
+    })
   }
 
   async function start() {
@@ -128,8 +146,11 @@
     })
     .then(response => response.text())
     .then(data => {
-      let board = JSON.parse(data);
-      draw(board, [], []);
+      let gameState = JSON.parse(data);
+      if (!gameState.isRunning) {
+        console.log(gameState.message);
+      }
+      draw(gameState.board, [], []);
     })
     
   }
@@ -142,7 +163,7 @@
 
   // Board is a 2D array of Pieces
   function draw(board, availableMoves, activePiece) {
-    
+    console.log(board);
     let inner = '';
     let table = document.getElementById('board');
     table.innerHTML = '';
