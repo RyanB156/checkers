@@ -91,9 +91,31 @@ function getAvailableMoves(req) {
   } else {
     let gameData = {
       board: gameResult.data['board'],
-      availableMoves: Board.getAvailableMoves(gameResult.data['board'], req.body['row'], req.body['col'])
+      availableMoves: Board.getAvailableMoves(gameResult.data['board'], req.body['row'], req.body['col']).map(move => move.targetSquare)
     }
     return new Success(200, gameData);
+  }
+}
+
+/*
+  TODO:
+    Make sure the serve side of moving is good to go
+    Setup client side of moving
+      Use current piece, don't move without first selecting a piece
+      Clear local storage to remove current piece after move and at the start of each turn
+*/
+
+function move(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    let newBoard = Board.move(gameResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
+    if (newBoard === undefined) {
+      return new Failure(400, `Could not move piece (${req.body['startRow']}, ${req.body['startCol']}) to (${req.body['endRow']}, ${req.body['endCol']})`);
+    } else {
+      return new Success(200, newBoard);
+    }
   }
 }
 
@@ -166,6 +188,7 @@ let actionsWithAuth = [
   {name: 'joinGame', func: joinGame},
   {name: 'startGame', func: getBoard},
   {name: 'getAvailableMoves', func: getAvailableMoves},
+  {name: 'move', func: move},
 ];
 
 actionsWithAuth.forEach(action => {
