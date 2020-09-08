@@ -109,34 +109,40 @@
     })
     .then(response => response.json())
     .then(data => {
-      console.log(data);
       draw(data['board'], data['availableMoves'], [row, col]);
     })
   }
 
   function pieceClick(row, col) {
     console.log(`Piece clicked (${row}, ${col})`);
-    localStorage['currentPiece'] = [row, col];
+    localStorage['currentPiece'] = `${row}${col}`;
     showAvailableMoves(row, col);
   }
 
   async function move(startRow, startCol, endRow, endCol) {
+    
     fetch('/action/move', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({startRow: startRow, startCol: startCol, endRow: endRow, endCol: endCol})
     })
-    .then(response => )
+    .then(response => response.text())
+    .then(data => {
+      let board = JSON.parse(data);
+      draw(board, [], []);
+    })
     
   }
 
   function openSquareClick(row, col) {
     console.log(`Open square clicked (${row}, ${col})`);
-    move(localStorage['currentPiece'][0], localStorage['currentPiece'][1], row, col);
+    console.log(+localStorage['currentPiece'][0], +localStorage['currentPiece'][1], row, col);
+    move(+localStorage['currentPiece'][0], +localStorage['currentPiece'][1], row, col);
   }
 
   // Board is a 2D array of Pieces
   function draw(board, availableMoves, activePiece) {
+    
     let inner = '';
     let table = document.getElementById('board');
     table.innerHTML = '';
@@ -144,7 +150,7 @@
       let tr = document.createElement('tr');
       for (let col = 0; col < 8; col++) {
         let piece = board[row][col];
-        let pieceClass;
+        let pieceClass = '';
         // Setup the grid square. It may or not have a piece.
         let squareClass = (row + col) % 2 === 0 ? 'blackSquare' : 'whiteSquare';
         // Mark positions the current piece can move to.
@@ -180,6 +186,9 @@
             kingMark.innerHTML = 'K';
             tdPiece.appendChild(kingMark);
           }
+        } else if (squareClass === 'highlight') {
+          tdPiece.className = 'piece';
+          tdPiece.onclick = () => openSquareClick(row, col);
         }
         td.appendChild(tdPiece);
         tr.appendChild(td);

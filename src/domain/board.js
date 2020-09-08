@@ -35,7 +35,7 @@ class Board {
       if (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
         // If the target square is empty move there.
         if (board[targetRow][targetCol] === null) {
-          console.log(`target square ${JSON.stringify({targetSquare: [targetRow, targetCol], jumpedSquare: []})}`);
+          //console.log(`target square ${JSON.stringify({targetSquare: [targetRow, targetCol], jumpedSquare: []})}`);
           availableMoves.push({targetSquare: [targetRow, targetCol], jumpedSquare: []});
         } else if (board[targetRow][targetCol].team !== piece.team) { // Otherwise try to jump over the piece.
           // Grab the landing square.
@@ -44,7 +44,7 @@ class Board {
           // If the landing square is inside the board.
           if (jumpRow >= 0 && jumpRow < 8 && jumpCol >= 0 && jumpCol < 8) {
             if (board[jumpRow][jumpCol] === null) {
-              console.log(`jump square ${JSON.stringify({targetSquare: [jumpRow, jumpCol], jumpedSquare: [targetRow, targetCol]})}`);
+              //console.log(`jump square ${JSON.stringify({targetSquare: [jumpRow, jumpCol], jumpedSquare: [targetRow, targetCol]})}`);
               availableMoves.push({targetSquare: [jumpRow, jumpCol], jumpedSquare: [targetRow, targetCol]});
             }
           }
@@ -57,6 +57,7 @@ class Board {
 
   /** Move a piece, removing pieces that are jumped over */
   static move(board, startRow, startCol, endRow, endCol) {
+    console.log(startRow, startCol, endRow, endCol);
     // Ensure the piece is inside the board.
     let availableMoves = this.getAvailableMoves(board, startRow, startCol);
     let canMove = false;
@@ -64,6 +65,7 @@ class Board {
     let takeMove = availableMoves.find(move => move.targetSquare[0] === endRow && move.targetSquare[1] === endCol);
 
     if (takeMove === undefined) {
+      console.log('move undefined');
       return undefined;
     }
 
@@ -73,12 +75,14 @@ class Board {
     board[takeMove.targetSquare[0]][takeMove.targetSquare[1]] = piece;
     // Remove the piece that was jumped over, if possible.
     if (takeMove.jumpedSquare.length > 0) {
-      if (board[jumpedSquare[0]][jumpedSquare[1]].team === piece.team) {
+      if (board[takeMove.jumpedSquare[0]][takeMove.jumpedSquare[1]].team === piece.team) {
         return undefined;
       } else {
         board[takeMove.jumpedSquare[0]][takeMove.jumpedSquare[1]] = null;
       }
     }
+
+    return board;
 
   }
 

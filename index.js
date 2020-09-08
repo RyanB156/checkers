@@ -101,7 +101,7 @@ function getAvailableMoves(req) {
   TODO:
     Make sure the serve side of moving is good to go
     Setup client side of moving
-      Use current piece, don't move without first selecting a piece
+      Use current piece, don't move without first selecting a piece √
       Clear local storage to remove current piece after move and at the start of each turn
 */
 
@@ -114,6 +114,8 @@ function move(req) {
     if (newBoard === undefined) {
       return new Failure(400, `Could not move piece (${req.body['startRow']}, ${req.body['startCol']}) to (${req.body['endRow']}, ${req.body['endCol']})`);
     } else {
+      gameResult.board = newBoard;
+      console.log(gameAPI.update(req.cookies['gameCode'], gameResult));
       return new Success(200, newBoard);
     }
   }
@@ -203,7 +205,7 @@ actionsWithAuth.forEach(action => {
       console.log('--Action successful');
       return res.status(200).send(dataResult.data);
     } else {
-      console.log('--Action failed');
+      console.log(`--Action failed. Error: ${dataResult.error}`);
       return res.status(dataResult.status).send(dataResult.error);
     }
   });
@@ -238,6 +240,6 @@ app.get('/*', function(req, res) {
 });
 
 app.listen(port, () => {
-  console.log(`Listening on port ${port}`);
+  console.log(`Listening on port ${port} at ${new Date(Date.now()).toLocaleString('en-US')}`);
 });
 
