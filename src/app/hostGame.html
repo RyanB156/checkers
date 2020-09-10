@@ -1,84 +1,14 @@
 
 
 <p id="gameCode"></p>
-<button id="getGameCodeButton" onclick="getGameCode()">Get Join Code</button>
-<button id="hostGameButton" onclick="hostGame()">Host Game</button>
+<button id="getGameCodeButton" onclick="getGameCode()">Host Game</button>
 <button id="startButton" onclick="start()">Start</button>
-
-<style>
-
-  #startButton {
-    display: none;
-  }
-
-  .white {
-    background-color: white;
-  }
-
-  .red {
-    background-color: red;
-  }
-
-  .white.active {
-    background-color: rgb(255, 253, 129);
-  }
-
-  .red.active {
-    background-color: rgb(255, 81, 0);
-  }
-
-  .piece {
-    width: 36px;
-    height: 36px;
-    border-radius: 18px;
-  }
-
-  .kingMark {
-    position: relative;
-    font-size: 1.1em;
-    width: 18px;
-    top: 6px;
-    left: 12px;
-  }
-
-  .red .kingMark {
-    color: white;
-  }
-
-  .white .kingMark {
-    color: black; 
-  }
-
-  .piece:hover {
-    cursor: grab;
-  }
-
-  .gridSquare {
-    width: 40px;
-    height: 40px;
-    border: 1px black solid;
-  }
-
-  .blackSquare {
-    background-color: black;
-  }
-
-  .whiteSquare {
-    background-color: rgb(200, 200, 200);
-  }
-
-  .highlight {
-    background-color: rgb(252, 255, 78)
-  }
-
-</style>
-
-<table id="board" class="mt-5"></table>
 
 <script>
 
   let board;
 
+  // Create a game code for the new game.
   async function getGameCode() {
     
     fetch('/action/getGameCode', {
@@ -97,7 +27,7 @@
     });
   }
 
-
+  // Send game code to the server and initialize a new game.
   async function hostGame() {
     fetch('/action/hostGame', {
       method: 'POST',
@@ -108,114 +38,16 @@
     })
   }
 
+  // Tell server to activate the new game and start playing.
+  // TODO: Make sure that there are two players active. (timeouts maybe?).
   async function start() {
     fetch('/action/startGame', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
     })
-    .then(response => response.json())
-    .then(board => {
-      draw(board, [], []);
+    .then(response => {
+      location.href = '/playGame';
     })
-  }
-
-  async function showAvailableMoves(row, col) {
-    fetch('/action/getAvailableMoves', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({row: row, col: col})
-    })
-    .then(response => response.json())
-    .then(data => {
-      draw(data['board'], data['availableMoves'], [row, col]);
-    })
-  }
-
-  function pieceClick(row, col) {
-    console.log(`Piece clicked (${row}, ${col})`);
-    localStorage['currentPiece'] = `${row}${col}`;
-    showAvailableMoves(row, col);
-  }
-
-  async function move(startRow, startCol, endRow, endCol) {
-    
-    fetch('/action/move', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({startRow: startRow, startCol: startCol, endRow: endRow, endCol: endCol})
-    })
-    .then(response => response.text())
-    .then(data => {
-      let gameState = JSON.parse(data);
-      if (!gameState.isRunning) {
-        console.log(gameState.message);
-      }
-      draw(gameState.board, [], []);
-    })
-    
-  }
-
-  function openSquareClick(row, col) {
-    console.log(`Open square clicked (${row}, ${col})`);
-    console.log(+localStorage['currentPiece'][0], +localStorage['currentPiece'][1], row, col);
-    move(+localStorage['currentPiece'][0], +localStorage['currentPiece'][1], row, col);
-  }
-
-  // Board is a 2D array of Pieces
-  function draw(board, availableMoves, activePiece) {
-    console.log(board);
-    let inner = '';
-    let table = document.getElementById('board');
-    table.innerHTML = '';
-    for (let row = 0; row < 8; row++) {
-      let tr = document.createElement('tr');
-      for (let col = 0; col < 8; col++) {
-        let piece = board[row][col];
-        let pieceClass = '';
-        // Setup the grid square. It may or not have a piece.
-        let squareClass = (row + col) % 2 === 0 ? 'blackSquare' : 'whiteSquare';
-        // Mark positions the current piece can move to.
-        for (let i = 0; i < availableMoves.length; i++) {
-          if (availableMoves[i][0] === row && availableMoves[i][1] === col) {
-            console.log(`Highlighting (${row}, ${col})`);
-            squareClass = 'highlight';
-          }
-        }
-        let td = document.createElement('td');
-        td.className += ' ' + squareClass + ' gridSquare';
-
-        if (piece === undefined || piece === null) {
-          pieceClass = '';
-        } else {
-          pieceClass = piece['team'] === 'W' ? 'white' : 'red';
-          if (activePiece[0] === row && activePiece[1] === col) {
-            console.log('Found active piece');
-            pieceClass += ' ' + 'active';
-            console.log(pieceClass);
-          }
-        }
-
-        let tdPiece = document.createElement('div');
-        if (pieceClass !== '') {
-          tdPiece.className += ' ' + pieceClass + ' piece';
-          
-          tdPiece.onclick = () => pieceClick(row, col);
-          
-          if (piece['isKing']) {
-            let kingMark = document.createElement('div');
-            kingMark.className += ' ' + 'kingMark';
-            kingMark.innerHTML = 'K';
-            tdPiece.appendChild(kingMark);
-          }
-        } else if (squareClass === 'highlight') {
-          tdPiece.className = 'piece';
-          tdPiece.onclick = () => openSquareClick(row, col);
-        }
-        td.appendChild(tdPiece);
-        tr.appendChild(td);
-      }
-      table.appendChild(tr);
-    }
   }
 
 </script>

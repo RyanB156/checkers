@@ -63,7 +63,7 @@ function hostGame(req) {
     friend: '',
     gameCode: req.cookies['gameCode'],
     currentPlayer: req.cookies['username'],
-    isRunning: true,
+    isRunning: false,
     board: game
   }
   gameAPI.add(gameState.gameCode, gameState);
@@ -74,6 +74,18 @@ function hostGame(req) {
 function joinGame(req) {
   let gameCode = req.body['gameCode'];
   return new Success(200, gameCode);
+}
+
+function startGame(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    let gameResult = gameAPI.get(req.cookies['gameCode']);
+    gameResult.data['isRunning'] = true;
+    gameAPI.update(req.cookies['gameCode'], gameResult.data);
+    return new Success(200, gameResult.data['board']);
+  }
 }
 
 function getBoard(req) {
@@ -103,7 +115,11 @@ function getAvailableMoves(req) {
 
     Game runs until the last piece is to be taken, then errors and restarts that turn...
 
-    Enforce turns
+    Enforce turns √
+
+    Allow friend to join the game with the code
+      Server adds the friends username
+      Client shows whose turn it is
 
     Make sure the serve side of moving is good to go
     Setup client side of moving
@@ -112,23 +128,29 @@ function getAvailableMoves(req) {
 */
 
 function move(req) {
-  let gameResult = gameAPI.get(req.cookies['gameCode']);
-  if (!gameResult.data.isRunning) {
-    return;
+  let gameLoadResult = gameAPI.get(req.cookies['gameCode']);
+  if (!gameLoadResult.data.isRunning) {
+    return new Failure(400, 'The game is over');
   }
-  if (gameResult.status !== 200) {
+  /* Uncomment this when a friend can join the game...
+  if (!gameLoadResult.data['currentPlayer'] === req.cookies['username']) {
+    return new Failure(400, 'You must wait your turn');
+  }
+  */
+  if (gameLoadResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
-    let gameState = Board.move(gameResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
+    let gameState = Board.move(gameLoadResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
     if (gameState.board === undefined) {
       return new Failure(400, `Could not move piece (${req.body['startRow']}, ${req.body['startCol']}) to (${req.body['endRow']}, ${req.body['endCol']})`);
     } else {
       if (!gameState.isRunning) {
-        gameResult.data['isRunning'] = false;
+        gameLoadResult.data['isRunning'] = false;
         //gameAPI.delete(req.cookies['gameCode']);
       } else {
-        gameResult.board = gameState.board;
-        gameAPI.update(req.cookies['gameCode'], gameResult.data);
+        gameLoadResult.data.board = gameState.board;
+        gameLoadResult.data['currentPlayer'] = req.cookies['username'] === gameLoadResult.data['host'] ? gameLoadResult.data['friend'] : gameLoadResult.data['host'];
+        gameAPI.update(req.cookies['gameCode'], gameLoadResult.data);
       }
       return new Success(200, gameState);
     }
@@ -190,7 +212,11 @@ function canAuthenticate(req) {
 // TODO: Expire session keys...
 function isAuthenticated(req) {
   let userResult = userAPI.get(req.cookies['username']);
-  return canAuthenticate(req) && userResult.status == 200 && userResult.data['sessionKey'] === req.cookies['sessionKey'];
+  let b = canAuthenticate(req) && userResult.status == 200 && userResult.data['sessionKey'] === req.cookies['sessionKey'];
+  if (!b) {
+    console.log(canAuthenticate(req), userResult.status == 200,  userResult.data['sessionKey'] === req.cookies['sessionKey'])
+  }
+  return b;
 }
 
 function accessDeniedHandler(res) {
@@ -202,7 +228,8 @@ let actionsWithAuth = [
   {name: 'getGameCode', func: getSessionKey},
   {name: 'hostGame', func: hostGame},
   {name: 'joinGame', func: joinGame},
-  {name: 'startGame', func: getBoard},
+  {name: 'startGame', func: startGame},
+  {name: 'getBoard', func: getBoard},
   {name: 'getAvailableMoves', func: getAvailableMoves},
   {name: 'move', func: move},
 ];
@@ -211,6 +238,7 @@ actionsWithAuth.forEach(action => {
   app.post('/action/' + action.name, jsonParser, function(req, res) {
     console.log('/action/' + action.name);
     if (!isAuthenticated(req)) {
+      console.log('--User failed authentication step');
       return accessDeniedHandler(res);
     }
     console.log('--User is authenticated');
@@ -239,10 +267,12 @@ pageNamesAuth.forEach(pageName => {
   app.get('/' + pageName, function(req, res) {
     console.log('/' + pageName);
     if (!isAuthenticated(req)) {
+      console.log('--User failed authentication step');
       return accessDeniedHandler(res);
     }
     console.log('--User is authenticated');
     let page = getApp(pageName);
+    console.log('--Sending the page');
     return res.status(200).send(page);
   });
 });
