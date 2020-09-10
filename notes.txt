@@ -2,15 +2,15 @@
 
 User Functionality
     Register
-        User clicks 'Register' on the menu bar
-        User enters username
-        User enters password
-        User clicks 'Submit'
-        Client creates hash = H(password)
-        Client submits {username, hash} to Server
-        Server checks uniqueness of username
-        Server adds User to data store
-        -> Login
+        User clicks 'Register' on the menu bar √
+        User enters username √
+        User enters password √
+        User clicks 'Submit' √
+        Client creates hash = H(password) √
+        Client submits {username, hash} to Server √
+        Server checks uniqueness of username √
+        Server adds User to data store √
+        -> Login √
     Login
         User clicks 'Login' on the menu bar √
         User enters username √
@@ -18,42 +18,43 @@ User Functionality
         User clicks 'Submit' √
         Client creates hash = H(password) √
         Client submits {username, hash} to Server √
-        Server checks username and hash against data store
-        -> Home
+        Server checks username and hash against data store √
+        -> Home √
     Host Game
-        User clicks 'Host Game' on Home
-        Client tells Server to create a new game
-        Server creates a pending game session with User as Host
-        -> Wait for Other Player to Join
+        User clicks 'Host Game' on Home √
+        Client tells Server to create a new game √
+        Server creates a pending game session with User as Host √
+        -> Wait for Other Player to Join √
     Wait for Other Player to Join
-        Client idles showing a waiting screen
-        -> Start Game
+        Client idles showing a waiting screen √
+        -> Start Game √
     Join Game
-        User clicks on 'Join Game'
-        Client requests a list of pending game sessions from Server
-        Server returns all pending game sessions
-        Client displays the game sessions
-        User selects a session and clicks 'Join'
-        -> Wait for Game to Start
+        User clicks on 'Join Game' √
+        Client displays text box for game code √
+        User enters game code from friend that is hosting a game √
+        User clicks 'Join' √
+        Client sends game code to server √
+        Server checks game code, adds username to the 'friend' field √
+        -> Wait for Game to Start √
     Wait for Game to Start
-        Client refreshes on Game Lobby to show when game starts
+        Client refreshes on Game Lobby to show when game starts √
     Start Game
-        User clicks on 'Start'
-        Host Client requests active game session from Server
-        Server gives game state to Host User and Other User
+        User clicks on 'Start' √
+        Host Client requests active game session from Server √
+        Server gives game state to Host User and Other User √
         -> Play Game
     Play Game
         Movement
-            Pieces move diagonally, staying on black tiles
-            Normal pieces can only move towards the opponent
-            King pieces can move forward or backwards
+            Pieces move diagonally, staying on black tiles √
+            Normal pieces can only move towards the opponent √
+            King pieces can move forward or backwards √
         Capturing
-            Pieces jump over the opponent's pieces to capture them
-            A piece cannot capture if the other piece is guarded
+            Pieces jump over the opponent's pieces to capture them √
+            A piece cannot capture if the other piece is guarded √
         Promotion
-            A normal piece that reaches the opponents home row becomes a King
+            A normal piece that reaches the opponents home row becomes a King √
         Finishing a Game
-            Win/Loss if all pieces are captured or if a player quits
+            Win/Loss if all pieces are captured or if a player quits (Need to check for if a player quits, times out, etc.)
     View Stats
         User clicks 'View Stats' on Home
         Client requests stats from Server
@@ -62,8 +63,8 @@ User Functionality
 
 Security Requirements
     Do not expose user information, even if using http
-    Do not allow players to manage game state
-    Do not allow players to masquerade as the other player
+    Do not allow players to manage game state √
+    Do not allow players to masquerade as the other player √
 
     Establish secure communication with Server
         Client initiates connection w/o encryption over HTTP

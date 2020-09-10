@@ -2,26 +2,43 @@
 <input id="gameCode" type="text">
 <button onclick="join()">Join</button>
 
-<p id="joinError" class="text-danger hide">Unable to join</p>
-
 <script>
+
   async function join() {
-    document.getElementById('joinError').classList.remove('show'); // TODO: Move this to a function to make this simpler.
-    document.getElementById('joinError').classList.add('hide');
+    hideError();
     let gameCode = $('#gameCode').val();
+    Cookies.set('gameCode', gameCode);
     fetch('/action/joinGame', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({gameCode: $('#gameCode').val()})
     })
     .then(response => {
       if (response.status !== 200) {
-        document.getElementById('joinError').classList.remove('hide');
-        document.getElementById('joinError').classList.add('show');
+        showError('Unable to join');
       } else {
-        Cookies.set('gameCode', response.text());
-        location.href = '/playGame';
+        playGame();
       }
     });
   }
+
+  async function playGame() {
+    fetch('/action/getGameState', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+    })
+    .then(response => {
+      if (response.status === 200) {
+        response.text().then(text => {
+          console.log('text', text);
+          if (text === 'true') {
+            location.href = '/playGame';
+          } else {
+            showError('Waiting for the game to start');
+            window.setTimeout(playGame, 5000);
+          }
+        })
+      }
+    })
+  }
+
 </script>

@@ -10,8 +10,6 @@ const {Board} = require('./src/domain/board');
 const userAPI = new RestAPI('./src/domain/users.json');
 const gameAPI = new RestAPI('./src/domain/games.json');
 
-const port = 3000;
-
 let app = express();
 app.use(cors());
 app.use(cookieParser());
@@ -71,9 +69,36 @@ function hostGame(req) {
   return new Success(200, gameState.gameCode);
 }
 
+function getFriendsName(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    let friendsName = gameResult.data['friend'];
+    return new Success(200, friendsName);
+  }
+}
+
+function getGameState(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    let gameState = gameResult.data['isRunning'];
+    return new Success(200, gameState);
+  }
+}
+
 function joinGame(req) {
-  let gameCode = req.body['gameCode'];
-  return new Success(200, gameCode);
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  console.log('gameCode', req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    gameResult.data['friend'] = req.cookies['username'];
+    gameAPI.update(req.cookies['gameCode'], gameResult.data);
+    return new Success(200, true);
+  }
 }
 
 function startGame(req) {
@@ -82,6 +107,11 @@ function startGame(req) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
     let gameResult = gameAPI.get(req.cookies['gameCode']);
+
+    if (gameResult.data['friend'] === '') {
+      return new Failure(400, 'You cannot start a game until someone joins');
+    }
+
     gameResult.data['isRunning'] = true;
     gameAPI.update(req.cookies['gameCode'], gameResult.data);
     return new Success(200, gameResult.data['board']);
@@ -113,18 +143,12 @@ function getAvailableMoves(req) {
 /*
   TODO:
 
-    Game runs until the last piece is to be taken, then errors and restarts that turn...
+    Enforce turns
+      Server flip flops active player
+      Only allows move requests from active player, reject rest
+    
+      Client shows whose turn it is 
 
-    Enforce turns √
-
-    Allow friend to join the game with the code
-      Server adds the friends username
-      Client shows whose turn it is
-
-    Make sure the serve side of moving is good to go
-    Setup client side of moving
-      Use current piece, don't move without first selecting a piece √
-      Clear local storage to remove current piece after move and at the start of each turn
 */
 
 function move(req) {
@@ -227,6 +251,8 @@ function accessDeniedHandler(res) {
 let actionsWithAuth = [
   {name: 'getGameCode', func: getSessionKey},
   {name: 'hostGame', func: hostGame},
+  {name: 'getFriendsName', func: getFriendsName},
+  {name: 'getGameState', func: getGameState},
   {name: 'joinGame', func: joinGame},
   {name: 'startGame', func: startGame},
   {name: 'getBoard', func: getBoard},
@@ -241,7 +267,7 @@ actionsWithAuth.forEach(action => {
       console.log('--User failed authentication step');
       return accessDeniedHandler(res);
     }
-    console.log('--User is authenticated');
+    console.log(`--User is authenticated (${req.cookies['username']})`);
     let dataResult = action.func(req);
     if (dataResult.status === 200) {
       console.log('--Action successful');
@@ -270,7 +296,7 @@ pageNamesAuth.forEach(pageName => {
       console.log('--User failed authentication step');
       return accessDeniedHandler(res);
     }
-    console.log('--User is authenticated');
+    console.log(`--User is authenticated (${req.cookies['username']})`);
     let page = getApp(pageName);
     console.log('--Sending the page');
     return res.status(200).send(page);
@@ -282,6 +308,12 @@ app.get('/*', function(req, res) {
   let page = getApp('home');
   return res.status(200).send(page);
 });
+
+
+let port = process.env.PORT;
+if (port == null || port == "") {
+  port = 8000;
+}
 
 app.listen(port, () => {
   console.log(`Listening on port ${port} at ${new Date(Date.now()).toLocaleString('en-US')}`);

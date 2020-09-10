@@ -1,6 +1,8 @@
 
 
 <p id="gameCode"></p>
+
+<p id="friendsName">Playing with <b>________</b></p>
 <button id="getGameCodeButton" onclick="getGameCode()">Host Game</button>
 <button id="startButton" onclick="start()">Start</button>
 
@@ -8,6 +10,8 @@
 
   let board;
 
+  let i = 0;
+  
   // Create a game code for the new game.
   async function getGameCode() {
     
@@ -24,7 +28,26 @@
       Cookies.set('gameCode', data);
       document.getElementById('getGameCodeButton').style = "display:none;";
       hostGame();
+      getFriendsName();
     });
+  }
+
+  // Loop checking if a friend has joined.
+  async function getFriendsName() {
+    fetch('/action/getFriendsName', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+    })
+    .then(response => response.text())
+    .then(text => {
+      // If a friend has joined.
+      if (text !== '') {
+        let displayText = $('#friendsName').text();
+        $('#friendsName').text(displayText.replace('________', text));
+      } else { // If a friend has not joined.
+        window.setTimeout(getFriendsName, 4000);
+      }
+    })
   }
 
   // Send game code to the server and initialize a new game.
@@ -46,7 +69,15 @@
       headers: {'Content-Type': 'application/json'},
     })
     .then(response => {
-      location.href = '/playGame';
+      if (response.status === 200) {
+        location.href = '/playGame';
+      } else {
+        response.text().then(text => {
+          console.log(text); 
+          $('#errorMessage').text(text);
+        })
+        
+      }
     })
   }
 
