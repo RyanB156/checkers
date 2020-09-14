@@ -128,13 +128,18 @@ function getBoard(req) {
 }
 
 function getAvailableMoves(req) {
-  let gameResult = gameAPI.get(req.cookies['gameCode']);
-  if (gameResult.status !== 200) {
+  let gameLoadResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameLoadResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
+    let playerTeam = req.cookies['username'] === gameLoadResult.data['host'] ? 'R' : 'W';
+    console.log(playerTeam);
+    if (gameLoadResult.data['board'][req.body['startRow'], req.body['startCol']] !== playerTeam) {
+      return new Failure(400, 'You cannot move the other team\'s pieces');
+    }
     let gameData = {
-      board: gameResult.data['board'],
-      availableMoves: Board.getAvailableMoves(gameResult.data['board'], req.body['row'], req.body['col']).map(move => move.targetSquare)
+      board: gameLoadResult.data['board'],
+      availableMoves: Board.getAvailableMoves(gameLoadResult.data['board'], req.body['row'], req.body['col']).map(move => move.targetSquare)
     }
     return new Success(200, gameData);
   }
@@ -156,14 +161,15 @@ function move(req) {
   if (!gameLoadResult.data.isRunning) {
     return new Failure(400, 'The game is over');
   }
-  /* Uncomment this when a friend can join the game...
-  if (!gameLoadResult.data['currentPlayer'] === req.cookies['username']) {
+  
+  if (gameLoadResult.data['currentPlayer'] !== req.cookies['username']) {
     return new Failure(400, 'You must wait your turn');
   }
-  */
+  
   if (gameLoadResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
+
     let gameState = Board.move(gameLoadResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
     if (gameState.board === undefined) {
       return new Failure(400, `Could not move piece (${req.body['startRow']}, ${req.body['startCol']}) to (${req.body['endRow']}, ${req.body['endCol']})`);

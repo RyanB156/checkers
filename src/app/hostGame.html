@@ -70,6 +70,7 @@
     })
     .then(response => {
       if (response.status === 200) {
+        Cookies.set('team', 'R');
         location.href = '/playGame';
       } else {
         response.text().then(text => {

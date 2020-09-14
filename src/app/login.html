@@ -1,57 +1,53 @@
-<head>
-  <script>
+<script>
 
-    async function submit() {
-      let username = $('#username').val();
-      let password = $('#password').val();
-      let data = new TextEncoder().encode(password);
-      let hash = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hash));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      console.log(`Submitting username ${username}, password ${hashHex}`);
+  async function submit() {
+    let username = $('#username').val();
+    let password = $('#password').val();
+    let data = new TextEncoder().encode(password);
+    let hash = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hash));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    console.log(`Submitting username ${username}, password ${hashHex}`);
 
-      fetch('/action/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username: username, password: hashHex})
-      })
-      .then(response => {
-        if (response.status !== 200) {
-          console.log('Login error');
-          return;
-        }
-        console.log(response);
-        response.text().then(sessionKey => {
-          console.log('20', sessionKey);
-          console.log(`Received session key ${sessionKey}`);
-          Cookies.set('sessionKey', sessionKey);
-          Cookies.set('username', username);
-          location.href = '/home';
-        });
+    fetch('/action/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: username, password: hashHex})
+    })
+    .then(response => {
+      if (response.status !== 200) {
+        console.log('Login error');
+        return;
+      }
+      console.log(response);
+      response.text().then(sessionKey => {
+        console.log('20', sessionKey);
+        console.log(`Received session key ${sessionKey}`);
+        Cookies.set('sessionKey', sessionKey);
+        Cookies.set('username', username);
+        location.href = '/home';
       });
+    });
 
-    }
-  </script>
-
-</head>
-
+  }
+</script>
 
 <div class="row border rounded p-2">
-  <div class="col-md-6 mb-3">
-    <div class="row">
-      <label class="mr-2" for="username">Username</label>
-      <input type="text" id="username"> 
-    </div>
-    
+<div class="col-md-6 mb-3">
+  <div class="row">
+    <label class="mr-2" for="username">Username</label>
+    <input type="text" id="username"> 
   </div>
-  <div class="col-md-6">
-    <div class="row">
-      <label class="mr-2" for="password">Password</label>
-      <input type="password" id="password">
-    </div>
-  </div>
-
-  <button class="ml-auto mr-2" onclick="location.href='/register'">Register</button>
-  <button class="mr-0 ml-0" type="submit" onclick="submit()">Submit</button>
+  
 </div>
+<div class="col-md-6">
+  <div class="row">
+    <label class="mr-2" for="password">Password</label>
+    <input type="password" id="password">
+  </div>
+</div>
+
+<button class="ml-auto mr-2" onclick="location.href='/register'">Register</button>
+<button class="mr-0 ml-0" type="submit" onclick="submit()">Submit</button>
+
     

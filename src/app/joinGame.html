@@ -16,6 +16,7 @@
       if (response.status !== 200) {
         showError('Unable to join');
       } else {
+        Cookies.set('team', 'W');
         playGame();
       }
     });

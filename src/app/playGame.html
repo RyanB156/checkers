@@ -42,7 +42,7 @@
     color: black; 
   }
 
-  .piece:hover {
+  .clickable {
     cursor: grab;
   }
 
@@ -89,9 +89,15 @@
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({row: row, col: col})
     })
-    .then(response => response.json())
-    .then(data => {
-      draw(data['board'], data['availableMoves'], [row, col]);
+    .then(response => {
+      if (response.status !== 200) {
+        response.text().then(data => showError(data));
+      } else {
+        response.json()
+        .then(data => {
+          draw(data['board'], data['availableMoves'], [row, col]);
+        })
+      }
     })
   }
 
@@ -102,21 +108,26 @@
   }
 
   async function move(startRow, startCol, endRow, endCol) {
-    
+    hideError();
     fetch('/action/move', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({startRow: startRow, startCol: startCol, endRow: endRow, endCol: endCol})
     })
-    .then(response => response.text())
-    .then(data => {
-      let gameState = JSON.parse(data);
-      if (!gameState.isRunning) {
-        console.log(gameState.message);
+    .then(response => {
+      if (response.status !== 200) {
+        response.text().then(data => showError(data));
+      } else {
+        response.text()
+        .then(data => {
+          let gameState = JSON.parse(data);
+          if (!gameState.isRunning) {
+            console.log(gameState.message);
+          }
+          draw(gameState.board, [], []);
+        });
       }
-      draw(gameState.board, [], []);
     })
-    
   }
 
   function openSquareClick(row, col) {
@@ -162,8 +173,10 @@
         let tdPiece = document.createElement('div');
         if (pieceClass !== '') {
           tdPiece.className += ' ' + pieceClass + ' piece';
-          
-          tdPiece.onclick = () => pieceClick(row, col);
+          if (piece.team === Cookies.get('team')) {
+            tdPiece.className += ' ' + 'clickable'
+            tdPiece.onclick = () => pieceClick(row, col);
+          }
           
           if (piece['isKing']) {
             let kingMark = document.createElement('div');
@@ -172,7 +185,7 @@
             tdPiece.appendChild(kingMark);
           }
         } else if (squareClass === 'highlight') {
-          tdPiece.className = 'piece';
+          tdPiece.className = 'clickable piece';
           tdPiece.onclick = () => openSquareClick(row, col);
         }
         td.appendChild(tdPiece);
