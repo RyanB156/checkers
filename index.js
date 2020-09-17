@@ -89,6 +89,16 @@ function getGameState(req) {
   }
 }
 
+function getCurrentPlayer(req) {
+  let gameResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    let currentPlayer = gameResult.data['currentPlayer'];
+    return new Success(200, currentPlayer);
+  }
+}
+
 function joinGame(req) {
   let gameResult = gameAPI.get(req.cookies['gameCode']);
   console.log('gameCode', req.cookies['gameCode']);
@@ -133,8 +143,7 @@ function getAvailableMoves(req) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
     let playerTeam = req.cookies['username'] === gameLoadResult.data['host'] ? 'R' : 'W';
-    console.log(playerTeam);
-    if (gameLoadResult.data['board'][req.body['startRow'], req.body['startCol']] !== playerTeam) {
+    if (gameLoadResult.data['board'][req.body['row']][req.body['col']].team !== playerTeam) {
       return new Failure(400, 'You cannot move the other team\'s pieces');
     }
     let gameData = {
@@ -148,11 +157,19 @@ function getAvailableMoves(req) {
 /*
   TODO:
 
-    Enforce turns
-      Server flip flops active player
-      Only allows move requests from active player, reject rest
-    
-      Client shows whose turn it is 
+    Allow double jumps
+      Options:
+        1. Precalculate the jump moves
+          Changes: Server calculates 2x, 3x, ... nx jumps
+          Pros: No fancy state handling required
+          Cons: Can be confusing for player, will require a rewrite of 'getAvailableMoves' logic
+
+        2. Allow player to move the same piece multiple times
+          Changes: Server calculates a list of pieces the player can move on each turn, Client adds clickability to only
+            the pieces in the list
+
+
+    Have client only allow clicking on pieces when it is your turn
 
 */
 
@@ -259,6 +276,7 @@ let actionsWithAuth = [
   {name: 'hostGame', func: hostGame},
   {name: 'getFriendsName', func: getFriendsName},
   {name: 'getGameState', func: getGameState},
+  {name: 'getCurrentPlayer', func: getCurrentPlayer},
   {name: 'joinGame', func: joinGame},
   {name: 'startGame', func: startGame},
   {name: 'getBoard', func: getBoard},

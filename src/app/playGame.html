@@ -65,23 +65,45 @@
   }
 
 </style>
-
+<p id="turnState"></p>
 <table id="board" class="mt-5"></table>
 
 <script>
 
-  async function start() {
-    console.log('start()');
+  let isYourTurn;
+
+  async function start(checkPlayer) {
     fetch('/action/getBoard', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
     })
     .then(response => response.json())
     .then(board => {
-      draw(board, [], []);
+      draw(board, [], [], checkPlayer);
     })
   }
-  window.onload = () => start();
+  window.onload = () => {
+    start(true);
+  }
+
+  async function checkCurrentPlayer() {
+    return fetch('/action/getCurrentPlayer', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+    })
+    .then(response => response.text())
+    .then(currentPlayer => {
+      if (currentPlayer === Cookies.get('username')) {
+        $('#turnState').text('It is your turn');
+        start(false);
+        isYourTurn = true;
+      } else {
+        $('#turnState').text('It is the other person\'s turn');
+        window.setTimeout(checkCurrentPlayer, 2500);
+        isYourTurn = false;
+      }
+    })
+  }
 
   async function showAvailableMoves(row, col) {
     fetch('/action/getAvailableMoves', {
@@ -125,6 +147,7 @@
             console.log(gameState.message);
           }
           draw(gameState.board, [], []);
+          checkCurrentPlayer();
         });
       }
     })
@@ -137,8 +160,10 @@
   }
 
   // Board is a 2D array of Pieces
-  function draw(board, availableMoves, activePiece) {
+  async function draw(board, availableMoves, activePiece, checkPlayer) {
     console.log(board);
+
+    let isYourTurn = checkPlayer ? checkCurrentPlayer().then(b => b) : true;
     let inner = '';
     let table = document.getElementById('board');
     table.innerHTML = '';
@@ -173,7 +198,7 @@
         let tdPiece = document.createElement('div');
         if (pieceClass !== '') {
           tdPiece.className += ' ' + pieceClass + ' piece';
-          if (piece.team === Cookies.get('team')) {
+          if (isYourTurn && piece.team === Cookies.get('team')) {
             tdPiece.className += ' ' + 'clickable'
             tdPiece.onclick = () => pieceClick(row, col);
           }
