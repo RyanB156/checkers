@@ -98,3 +98,23 @@ Documentation
         });
       })
     }
+
+
+Change -> allow double jump and have client only show movable pieces as movable
+Move flow
+    2 cases
+        Beginning of Turn, triggered by request to 'getBoard'
+            Server creates a list of pieces the player can move √
+            Server returns this list with the board √
+            Player moves
+            Client draws board, using the list of pieces to make them clickable √
+            Normal move -> change player 
+            Jumping move -> After Jump
+            Doesn't matter if the client abuses the list and tries to move other pieces. The server validates this.
+
+        After Jump, triggered by request to 'move' with a jumping move
+            Server detects the jump √
+            Server marks that piece as still movable √
+            Client maintains active piece √
+            Client moves the piece or clicks 'End Turn' √
+            Server only allows movement of this piece to those locations √

@@ -3,8 +3,8 @@
 <p id="gameCode"></p>
 
 <p id="friendsName">Playing with <b>________</b></p>
-<button id="getGameCodeButton" onclick="getGameCode()">Host Game</button>
-<button id="startButton" onclick="start()">Start</button>
+<button id="getGameCodeButton" class="show" onclick="getGameCode()">Get game code</button>
+<button id="startButton" class="hide" onclick="start()">Start</button>
 
 <script>
 
@@ -26,7 +26,7 @@
       let gameCodeMessage = `You are hosting game <b>${data}</b><br> Share this with your friend so they can join!`
       document.getElementById('gameCode').innerHTML = gameCodeMessage;
       Cookies.set('gameCode', data);
-      document.getElementById('getGameCodeButton').style = "display:none;";
+      hideElement('getGameCodeButton');
       hostGame();
       getFriendsName();
     });
@@ -57,7 +57,7 @@
       headers: {'Content-Type': 'application/json'},
     })
     .then(response => {
-      document.getElementById('startButton').style="display:block";
+      showElement('startButton');
     })
   }
 

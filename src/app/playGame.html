@@ -67,23 +67,40 @@
 </style>
 <p id="turnState"></p>
 <table id="board" class="mt-5"></table>
+<button id="endTurnButton" class="hide" onclick="endTurn()">End Turn</button>
 
 <script>
 
   let isYourTurn;
+  let movablePieces; // Store the pieces that can be moved on each turn.
 
-  async function start(checkPlayer) {
+  async function start(checkPlayer=true) {
     fetch('/action/getBoard', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
     })
     .then(response => response.json())
-    .then(board => {
-      draw(board, [], [], checkPlayer);
+    .then(data => {
+      console.log(data);
+      movablePieces = data['movablePieces'];
+      draw(data.board, movablePieces, [], [], checkPlayer);
     })
   }
   window.onload = () => {
-    start(true);
+    start();
+  }
+
+  async function endTurn() {
+    return fetch('/action/endTurn', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+    })
+    .then(response => {
+      console.log('ending turn');
+      isYourTurn = false;
+      hideElement('endTurnButton');
+      checkCurrentPlayer();
+    });
   }
 
   async function checkCurrentPlayer() {
@@ -91,16 +108,24 @@
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
     })
-    .then(response => response.text())
-    .then(currentPlayer => {
-      if (currentPlayer === Cookies.get('username')) {
-        $('#turnState').text('It is your turn');
-        start(false);
-        isYourTurn = true;
+    .then(response => {
+      if (response.status === 503) {
+        response.text().then(text => {
+          console.log(text);
+          showError(text);
+        })
       } else {
-        $('#turnState').text('It is the other person\'s turn');
-        window.setTimeout(checkCurrentPlayer, 2500);
-        isYourTurn = false;
+        response.text().then(currentPlayer => {
+          if (currentPlayer === Cookies.get('username')) {
+            $('#turnState').text('It is your turn');
+            start(false);
+            isYourTurn = true;
+          } else {
+            $('#turnState').text('It is the other person\'s turn');
+            window.setTimeout(checkCurrentPlayer, 2500);
+            isYourTurn = false;
+          }
+        })
       }
     })
   }
@@ -117,7 +142,7 @@
       } else {
         response.json()
         .then(data => {
-          draw(data['board'], data['availableMoves'], [row, col]);
+          draw(data['board'], movablePieces, data['availableMoves'], [row, col]);
         })
       }
     })
@@ -145,8 +170,15 @@
           let gameState = JSON.parse(data);
           if (!gameState.isRunning) {
             console.log(gameState.message);
+            showError(gameState.message);
           }
-          draw(gameState.board, [], []);
+
+          if (gameState.pieceJumped) {
+            showElement('endTurnButton');
+            draw(gameState.board, gameState.movablePieces, [], []);
+          } else {
+            draw(gameState.board, [], [], []);
+          }
           checkCurrentPlayer();
         });
       }
@@ -160,7 +192,7 @@
   }
 
   // Board is a 2D array of Pieces
-  async function draw(board, availableMoves, activePiece, checkPlayer) {
+  async function draw(board, movablePieces, availableMoves, activePiece, checkPlayer) {
     console.log(board);
 
     let isYourTurn = checkPlayer ? checkCurrentPlayer().then(b => b) : true;
@@ -198,7 +230,7 @@
         let tdPiece = document.createElement('div');
         if (pieceClass !== '') {
           tdPiece.className += ' ' + pieceClass + ' piece';
-          if (isYourTurn && piece.team === Cookies.get('team')) {
+          if (isYourTurn && movablePieces.find(pos => pos[0] === row && pos[1] === col) !== undefined) {
             tdPiece.className += ' ' + 'clickable'
             tdPiece.onclick = () => pieceClick(row, col);
           }

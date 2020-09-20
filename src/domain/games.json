@@ -1,1 +1,104 @@
-{"97e6ce3b5229a3766858f4853ee7fe0a6cd2b0ce68507630dcf427b76aa6bdc9":{"host":"a","friend":"c","gameCode":"97e6ce3b5229a3766858f4853ee7fe0a6cd2b0ce68507630dcf427b76aa6bdc9","currentPlayer":"a","isRunning":true,"board":[[{"team":"W","isKing":false},null,{"team":"W","isKing":false},null,{"team":"W","isKing":false},null,{"team":"W","isKing":false},null],[null,{"team":"W","isKing":false},null,{"team":"W","isKing":false},null,{"team":"W","isKing":false},null,{"team":"W","isKing":false}],[{"team":"W","isKing":false},null,{"team":"W","isKing":false},null,{"team":"W","isKing":false},null,{"team":"W","isKing":false},null],[null,null,null,null,null,null,null,null],[null,null,null,null,null,null,null,null],[null,{"team":"R","isKing":false},null,{"team":"R","isKing":false},null,{"team":"R","isKing":false},null,{"team":"R","isKing":false}],[{"team":"R","isKing":false},null,{"team":"R","isKing":false},null,{"team":"R","isKing":false},null,{"team":"R","isKing":false},null],[null,{"team":"R","isKing":false},null,{"team":"R","isKing":false},null,{"team":"R","isKing":false},null,{"team":"R","isKing":false}]]},"1b15262c91b4243ee66daa2a0e5ca70384114c24fbd45f2aa708bdfcbfdca77b":{"host":"a","friend":"c","gameCode":"1b15262c91b4243ee66daa2a0e5ca70384114c24fbd45f2aa708bdfcbfdca77b","currentPlayer":"a","isRunning":true,"board":[[null,null,{"team":"W","isKing":false},null,null,null,{"team":"W","isKing":false},null],[null,null,null,{"team":"W","isKing":false},null,null,null,null],[null,null,null,null,null,null,{"team":"W","isKing":false},null],[null,null,null,null,null,null,null,null],[{"team":"R","isKing":false},null,null,null,null,null,null,null],[null,{"team":"W","isKing":false},null,null,null,null,null,null],[{"team":"R","isKing":false},null,null,null,null,null,null,null],[null,null,null,{"team":"R","isKing":false},null,null,null,{"team":"R","isKing":false}]]}}
+{
+  "3aca9572afe98c201ec22d4d039d3ffe6f547bd6a4d7412d9af8841020b78d4f": {
+    "host": "a",
+    "friend": "c",
+    "gameCode": "3aca9572afe98c201ec22d4d039d3ffe6f547bd6a4d7412d9af8841020b78d4f",
+    "currentPlayer": "c",
+    "isRunning": false,
+    "board": [
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        {
+          "team": "W",
+          "isKing": false
+        },
+        null,
+        {
+          "team": "W",
+          "isKing": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        {
+          "team": "W",
+          "isKing": false
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        {
+          "team": "W",
+          "isKing": true
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "movablePiece": null
+  }
+}

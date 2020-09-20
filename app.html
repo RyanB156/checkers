@@ -40,6 +40,16 @@
       $('#errorMessage').addClass('hide');
       $('#errorMessage').text('');
     }
+
+    function showElement(elementId) {
+      $(`#${elementId}`).removeClass('hide');
+      $(`#${elementId}`).addClass('show');
+    }
+
+    function hideElement(elementId) {
+      $(`#${elementId}`).removeClass('show');
+      $(`#${elementId}`).addClass('hide');
+    }
   </script>
 
   <body>

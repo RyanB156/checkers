@@ -23,10 +23,17 @@ class Board {
   static _redDeltas = [[-1, -1], [-1, 1]];
   static _kingDeltas = [[1, -1], [1, 1], [-1, -1], [-1, 1]];
 
-  static getAvailableMoves(board, row, col) {
+  static getAvailableMoves(board, row, col, jumpRequired=false) {
     let piece = board[row][col];
     let deltas = piece.isKing ? this._kingDeltas : (piece.team === 'R' ? this._redDeltas : this._whiteDeltas);
+    console.log(deltas);
     let availableMoves = [];
+
+    if (piece === null) {
+      console.log(`piece ${row}, ${col} is null`);
+      return availableMoves;
+    }
+
     for (let i = 0; i < deltas.length; i++) {
       // Find the target square.
       let targetRow = row + deltas[i][0];
@@ -34,10 +41,10 @@ class Board {
       // If the target square is inside the board.
       if (targetRow >= 0 && targetRow < 8 && targetCol >= 0 && targetCol < 8) {
         // If the target square is empty move there.
-        if (board[targetRow][targetCol] === null) {
+        if (!jumpRequired && board[targetRow][targetCol] === null) {
           //console.log(`target square ${JSON.stringify({targetSquare: [targetRow, targetCol], jumpedSquare: []})}`);
           availableMoves.push({targetSquare: [targetRow, targetCol], jumpedSquare: []});
-        } else if (board[targetRow][targetCol].team !== piece.team) { // Otherwise try to jump over the piece.
+        } else if (board[targetRow][targetCol] !== null && board[targetRow][targetCol].team !== piece.team) { // Otherwise try to jump over the piece.
           // Grab the landing square.
           let jumpRow = targetRow + deltas[i][0];
           let jumpCol = targetCol + deltas[i][1];
@@ -55,34 +62,72 @@ class Board {
     return availableMoves;
   }
 
-  static moveResult(isRunning, board, message) {
-    return {isRunning: isRunning, board: board, message: message};
+  static getJumpingMoves(board, row, col) {
+    return this.getAvailableMoves(board, row, col, false);
   }
 
-  /** Move a piece, removing pieces that are jumped over */
-  static move(board, startRow, startCol, endRow, endCol) {
+  /**Returns a list of movable pieces for the specified team */
+  static getMovablePieces(board, team) {
+    let movablePieces = [];
+
+    for (let i = 0; i < 8; i++) {
+      for (let j = 0; j < 8; j++) {
+        if (board[i][j] !== null && board[i][j].team === team) {
+          console.log('checking', i, j);
+          if (this.getAvailableMoves(board, i, j).length > 0) {
+            console.log('adding', i, j);
+            movablePieces.push([i, j]);
+          }
+        }
+      }
+    }
+
+    return movablePieces;
+  }
+
+  static moveResult(stateData) {
+
+    let state = {
+      isRunning: stateData.isRunning,
+      board: stateData.board,
+      message: stateData.message !== undefined ? stateData.message : '',
+      movablePieces: stateData.movablePieces !== undefined ? stateData.movablePieces : [],
+      pieceJumped: stateData.pieceJumped !== undefined ? stateData.pieceJumped : false
+    }
+
+    console.log(state);
+    return state;
+  }
+
+  /** Move a piece, removing pieces that are jumped over
+   * Returns {isRunning: true/false, board: undefined (bad move) / defined (good move), 
+   * message: win/lose message, movablePieces: list of pieces the current player can move before ending their turn}
+   */
+  static move(board, startRow, startCol, endRow, endCol, jumpRequired=false) {
     console.log(startRow, startCol, endRow, endCol);
     // Ensure the piece is inside the board.
-    let availableMoves = this.getAvailableMoves(board, startRow, startCol);
-    
-    let takeMove = availableMoves.find(move => move.targetSquare[0] === endRow && move.targetSquare[1] === endCol);
+    let availableMoves = this.getAvailableMoves(board, startRow, startCol, jumpRequired);
+    let movablePieces = [];
+    let pieceJumped = false;
+    let chosenMove = availableMoves.find(move => move.targetSquare[0] === endRow && move.targetSquare[1] === endCol);
 
-    if (takeMove === undefined) {
+    if (chosenMove === undefined) {
       console.log('move undefined');
-      return this.moveResult(true, undefined, '');
+      return this.moveResult({isRunning: true, board: undefined});
     }
 
     let piece = board[startRow][startCol];
     // Move piece to its destination.
     board[startRow][startCol] = null;
-    board[takeMove.targetSquare[0]][takeMove.targetSquare[1]] = piece;
+    board[chosenMove.targetSquare[0]][chosenMove.targetSquare[1]] = piece;
     // Remove the piece that was jumped over, if possible.
-    if (takeMove.jumpedSquare.length > 0) {
-      if (board[takeMove.jumpedSquare[0]][takeMove.jumpedSquare[1]].team === piece.team) {
-        return this.moveResult(true, undefined, '');
-      } else {
-        board[takeMove.jumpedSquare[0]][takeMove.jumpedSquare[1]] = null;
+    if (chosenMove.jumpedSquare.length > 0) {
+      if (board[chosenMove.jumpedSquare[0]][chosenMove.jumpedSquare[1]].team === piece.team) {
+        return this.moveResult({isRunning: true, board: undefined});
       }
+      board[chosenMove.jumpedSquare[0]][chosenMove.jumpedSquare[1]] = null;
+      pieceJumped = true;
+      movablePieces = this.getJumpingMoves(board, chosenMove.targetSquare[0], chosenMove.targetSquare[1]);
     }
 
     if (piece.team === 'R' && endRow === 0 || piece.team === 'W' && endRow === 7) {
@@ -104,11 +149,11 @@ class Board {
     }
 
     if (redCount === 0) {
-      return this.moveResult(false, board, 'White wins');
+      return this.moveResult({isRunning: false, board: board, message: 'White wins'});
     } else if (whiteCount === 0) {
-      return this.moveResult(false, board, 'Red wins');
+      return this.moveResult({isRunning: false, board: board, message: 'Red wins'});
     } else {
-      return this.moveResult(true, board, '');
+      return this.moveResult({isRunning: true, board: board, movablePieces: movablePieces, pieceJumped: pieceJumped});
     }
 
   }

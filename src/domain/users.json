@@ -1,17 +1,1 @@
-{
-  "a": {
-    "username": "a",
-    "password": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-    "sessionKey": "68c9ffe475416c87c18b0845025553d3ccddc673eaada085dfe8207f034715f5"
-  },
-  "b": {
-    "username": "b",
-    "password": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-    "sessionKey": "3ee626ae1e882cd768c896350fc6ffa80ddc0bc7bb6f0586c0536e60dcd355e3"
-  },
-  "c": {
-    "username": "c",
-    "password": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-    "sessionKey": "4312d4ccbc27877d372b3855d481a23871c456c41645e1fabb2941c026bc7b7b"
-  }
-}
+{"a":{"username":"a","password":"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb","sessionKey":"9431854fccdf191483142407e76b5097b32dc2136b290dc86f13cfa2ef039e7e"},"b":{"username":"b","password":"3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d","sessionKey":"3ee626ae1e882cd768c896350fc6ffa80ddc0bc7bb6f0586c0536e60dcd355e3"},"c":{"username":"c","password":"2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6","sessionKey":"0fb8518a354872314b53bd1f8d1c6ff0a5d2f9d9601e99330d06ce286a8a46d9"}}

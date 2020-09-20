@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const { Result, Success, Failure, RestAPI } = require('./src/domain/rest-api/restApi');
 const {Board} = require('./src/domain/board');
+const board = require('./src/domain/board');
 
 const userAPI = new RestAPI('./src/domain/users.json');
 const gameAPI = new RestAPI('./src/domain/games.json');
@@ -43,6 +44,14 @@ function getApp(routingPage) {
   return html;
 }
 
+function getTeamFromUsername(username, hostsName) {
+  return hostsName === username ? 'R' : 'W';
+}
+
+function getFullTeamFromUsername(username, hostsName) {
+  return hostsName === username ? 'Red' : 'White';
+}
+
 function getSessionKey(req) {
   let data = new TextEncoder().encode(Date.now() | Math.random() * 10000);
   let hash = crypto.createHash('sha256');
@@ -62,7 +71,8 @@ function hostGame(req) {
     gameCode: req.cookies['gameCode'],
     currentPlayer: req.cookies['username'],
     isRunning: false,
-    board: game
+    board: game,
+    movablePiece: null
   }
   gameAPI.add(gameState.gameCode, gameState);
 
@@ -94,8 +104,15 @@ function getCurrentPlayer(req) {
   if (gameResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
-    let currentPlayer = gameResult.data['currentPlayer'];
-    return new Success(200, currentPlayer);
+
+    if (gameResult.data.isRunning) {
+      let currentPlayer = gameResult.data['currentPlayer'];
+      return new Success(200, currentPlayer);
+    } else {
+      let winMessage = gameResult.data['winner'] + ' wins';
+      return new Failure(503, winMessage);
+    }
+
   }
 }
 
@@ -124,7 +141,9 @@ function startGame(req) {
 
     gameResult.data['isRunning'] = true;
     gameAPI.update(req.cookies['gameCode'], gameResult.data);
-    return new Success(200, gameResult.data['board']);
+    let board = gameResult.data['board'];
+    //let allPlayersPieces = Board.allTeamsPiecePositions(board, req.cookies['username'])
+    return new Success(200, board);
   }
 }
 
@@ -133,7 +152,11 @@ function getBoard(req) {
   if (gameResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
-    return new Success(200, gameResult.data['board']);
+    let board = gameResult.data['board'];
+    let team = getTeamFromUsername(req.cookies['username'], gameResult.data['host']);
+    let movablePieces = Board.getMovablePieces(board, team);
+    console.log('movablePieces', movablePieces);
+    return new Success(200, {board: board, movablePieces: movablePieces});
   }
 }
 
@@ -142,36 +165,35 @@ function getAvailableMoves(req) {
   if (gameLoadResult.status !== 200) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
-    let playerTeam = req.cookies['username'] === gameLoadResult.data['host'] ? 'R' : 'W';
+    let playerTeam = getTeamFromUsername(req.cookies['username'], gameLoadResult.data['host']);
+
     if (gameLoadResult.data['board'][req.body['row']][req.body['col']].team !== playerTeam) {
       return new Failure(400, 'You cannot move the other team\'s pieces');
+    } else if (gameLoadResult.data['movablePiece'] !== null
+        && (req.body['row'] !== gameLoadResult.data['movablePiece'][0]
+        || req.body['col'] !== gameLoadResult.data['movablePiece'][1])) {
+      return new Failure(400, 'You must move the piece that you jumped');
     }
+
     let gameData = {
       board: gameLoadResult.data['board'],
-      availableMoves: Board.getAvailableMoves(gameLoadResult.data['board'], req.body['row'], req.body['col']).map(move => move.targetSquare)
+      availableMoves: Board.getAvailableMoves(gameLoadResult.data['board'], req.body['row'], req.body['col'], gameLoadResult.data['movablePiece'] !== null).map(move => move.targetSquare)
     }
     return new Success(200, gameData);
   }
 }
 
-/*
-  TODO:
 
-    Allow double jumps
-      Options:
-        1. Precalculate the jump moves
-          Changes: Server calculates 2x, 3x, ... nx jumps
-          Pros: No fancy state handling required
-          Cons: Can be confusing for player, will require a rewrite of 'getAvailableMoves' logic
-
-        2. Allow player to move the same piece multiple times
-          Changes: Server calculates a list of pieces the player can move on each turn, Client adds clickability to only
-            the pieces in the list
-
-
-    Have client only allow clicking on pieces when it is your turn
-
-*/
+function endTurn(req) {
+  let gameLoadResult = gameAPI.get(req.cookies['gameCode']);
+  if (gameLoadResult.status !== 200) {
+    return new Failure(400, 'Could not find a game with that code');
+  } else {
+    gameLoadResult.data['currentPlayer'] = req.cookies['username'] === gameLoadResult.data['host'] ? gameLoadResult.data['friend'] : gameLoadResult.data['host'];
+    gameLoadResult.data['movablePiece'] = null;
+    gameAPI.update(req.cookies['gameCode'], gameLoadResult.data);
+  }
+}
 
 function move(req) {
   let gameLoadResult = gameAPI.get(req.cookies['gameCode']);
@@ -187,14 +209,28 @@ function move(req) {
     return new Failure(400, 'Could not find a game with that code');
   } else {
 
-    let gameState = Board.move(gameLoadResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol']);
-    if (gameState.board === undefined) {
+    // Ensure the player only moves the same piece after jumping with it.
+    if (gameLoadResult.data['movablePiece'] !== null
+        && (req.body['startRow'] !== gameLoadResult.data['movablePiece'][0]
+        || req.body['startCol'] !== gameLoadResult.data['movablePiece'][1])) {
+      return new Failure(400, 'You must move the piece that you jumped');
+    }
+
+    let gameState = Board.move(gameLoadResult.data['board'], req.body['startRow'], req.body['startCol'], req.body['endRow'], req.body['endCol'], gameLoadResult.data['movablePiece'] !== null);
+    if (gameState.board === undefined) { // Movement failed.
       return new Failure(400, `Could not move piece (${req.body['startRow']}, ${req.body['startCol']}) to (${req.body['endRow']}, ${req.body['endCol']})`);
-    } else {
-      if (!gameState.isRunning) {
+    } else if (gameState.pieceJumped) { // Player jumped, enforce movement of that piece next.
+      gameLoadResult.data['movablePiece'] = [req.body['endRow'], req.body['endCol']];
+      gameAPI.update(req.cookies['gameCode'], gameLoadResult.data);
+      gameState.movablePieces = [req.body['endRow'], req.body['endCol']];
+      return new Success(200, gameState);
+    } else { // Movement successful
+      if (!gameState.isRunning) { // Game ended.
         gameLoadResult.data['isRunning'] = false;
+        gameLoadResult.data['winner'] = getFullTeamFromUsername(req.cookies['username']);
+        gameAPI.update(req.cookies['gameCode'], gameLoadResult.data);
         //gameAPI.delete(req.cookies['gameCode']);
-      } else {
+      } else { // Game continues with the next player moving.
         gameLoadResult.data.board = gameState.board;
         gameLoadResult.data['currentPlayer'] = req.cookies['username'] === gameLoadResult.data['host'] ? gameLoadResult.data['friend'] : gameLoadResult.data['host'];
         gameAPI.update(req.cookies['gameCode'], gameLoadResult.data);
@@ -282,7 +318,10 @@ let actionsWithAuth = [
   {name: 'getBoard', func: getBoard},
   {name: 'getAvailableMoves', func: getAvailableMoves},
   {name: 'move', func: move},
+  {name: 'endTurn', func: endTurn}
 ];
+
+// move and startGame return a board object, they should return the available moves too.
 
 actionsWithAuth.forEach(action => {
   app.post('/action/' + action.name, jsonParser, function(req, res) {
